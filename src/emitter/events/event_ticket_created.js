@@ -65,9 +65,6 @@ const parseMemberEmails = async ticket => {
   let emailTo = concat(teamMembers, ticket.group.sendMailTo)
 
   emailTo = chain(emailTo)
-    .filter(i => {
-      return i.email !== ticket.owner.email
-    })
     .map(i => i.email)
     .uniq()
     .value()
