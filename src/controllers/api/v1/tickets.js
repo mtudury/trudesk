@@ -144,6 +144,7 @@ apiTickets.get = function (req, res) {
   var assignedSelf = req.query.assignedself
   var status = req.query.status
   var user = req.user
+  var tag = req.query.tag
 
   var object = {
     user: user,
@@ -151,6 +152,10 @@ apiTickets.get = function (req, res) {
     page: page,
     assignedSelf: assignedSelf,
     status: status
+  }
+
+  if (tag) {
+    object.filter = { tags: [tag] }
   }
 
   var ticketModel = require('../../../models/ticket')
