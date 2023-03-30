@@ -46,7 +46,18 @@
         <h4>Demande</h4>
         <hr/>
         <p class="issue">{{{ticket.issue}}}</p>
-        <br/>
+
+        <br/><br/>
+        <h4>Commentaires</h4>
+        <hr/>
+        {{#each ticket.comments}}
+            <h5>{{owner.fullname}}</h5>
+            <h5>{{date}}</h5>
+            <br/>
+            <p class="issue">{{{comment}}}</p>
+            <br/>
+            <hr/>
+        {{/each}}
     </div>
 </body>
 </html>
