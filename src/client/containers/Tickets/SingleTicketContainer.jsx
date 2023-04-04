@@ -545,7 +545,7 @@ class SingleTicketContainer extends React.Component {
                                 <div key={item._id} className='history-item'>
                                   <time
                                     dateTime={helpers.formatDate(item.date, this.props.common.get('longDateFormat'))}
-                                  />
+                                  >{helpers.formatDate(item.date, this.props.common.get('longDateFormat'))}</time>
                                   <em>
                                     Action by: <span>{item.owner.fullname}</span>
                                   </em>

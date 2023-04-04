@@ -132,6 +132,151 @@ const eventTicketCreated = require('./events/event_ticket_created')
     io.sockets.emit('ticket:subscriber:update', data)
   })
 
+  emitter.on('ticket:set:tags', function (ticket, hostname) {
+    // Goes to client
+    io.sockets.emit(socketEvents.TICKETS_UPDATE, ticket)
+
+    settingsSchema.getSettingsByName(['tps:enable', 'tps:username', 'tps:apikey', 'mailer:enable'], function (
+      err,
+      tpsSettings
+    ) {
+      if (err) return false
+
+      let tpsEnabled = _.head(_.filter(tpsSettings, ['name', 'tps:enable']))
+      let tpsUsername = _.head(_.filter(tpsSettings, ['name', 'tps:username']))
+      let tpsApiKey = _.head(_.filter(tpsSettings), ['name', 'tps:apikey'])
+      let mailerEnabled = _.head(_.filter(tpsSettings), ['name', 'mailer:enable'])
+      mailerEnabled = !mailerEnabled ? false : mailerEnabled.value
+
+      if (!tpsEnabled || !tpsUsername || !tpsApiKey) {
+        tpsEnabled = false
+      } else {
+        tpsEnabled = tpsEnabled.value
+        tpsUsername = tpsUsername.value
+        tpsApiKey = tpsApiKey.value
+      }
+
+      async.parallel(
+        [
+          function (cb) {
+            const notification = new NotificationSchema({
+              owner: ticket.owner,
+              title: 'Tags Added to Ticket#' + ticket.uid,
+              message: ticket.subject,
+              type: 1,
+              data: { ticket: ticket },
+              unread: true
+            })
+
+            notification.save(function (err) {
+              return cb(err)
+            })
+          },
+          function (cb) {
+            if (_.isUndefined(ticket.assignee)) return cb()
+            if (ticket.owner._id.toString() === ticket.assignee._id.toString()) return cb()
+
+            const notification = new NotificationSchema({
+              owner: ticket.assignee,
+              title: 'Tags Added to Ticket#' + ticket.uid,
+              message: ticket.subject,
+              type: 2,
+              data: { ticket: ticket },
+              unread: true
+            })
+
+            notification.save(function (err) {
+              return cb(err)
+            })
+          },
+          function (cb) {
+            sendPushNotification(
+              {
+                tpsEnabled: tpsEnabled,
+                tpsUsername: tpsUsername,
+                tpsApiKey: tpsApiKey,
+                hostname: hostname
+              },
+              { type: 2, ticket: ticket }
+            )
+            return cb()
+          },
+          // Send email to subscribed users
+          function (c) {
+            if (!mailerEnabled) return c()
+
+            const mailer = require('../mailer')
+            let emails = []
+            async.each(
+              ticket.subscribers,
+              function (member, cb) {
+                if (_.isUndefined(member) || _.isUndefined(member.email)) return cb()
+                if (member.deleted) return cb()
+
+                emails.push(member.email)
+
+                cb()
+              },
+              function (err) {
+                if (err) return c(err)
+
+                emails = _.uniq(emails)
+
+                if (_.size(emails) < 1) {
+                  return c()
+                }
+
+                const email = new Email({
+                  views: {
+                    root: templateDir,
+                    options: {
+                      extension: 'handlebars'
+                    }
+                  }
+                })
+
+                ticket.populate('tags', function (err, ticket) {
+                  if (err) winston.warn(err)
+                  if (err) return c()
+
+                  ticket = ticket.toJSON()
+
+                  email
+                    .render('ticket-tag-added', {
+                      ticket: ticket
+                    })
+                    .then(function (html) {
+                      const mailOptions = {
+                        to: emails.join(),
+                        subject: 'Ticket #' + ticket.uid + '-' + ticket.subject,
+                        html: html,
+                        generateTextFromHTML: true
+                      }
+
+                      mailer.sendMail(mailOptions, function (err) {
+                        if (err) winston.warn('[trudesk:events:sendSubscriberEmail] - ' + err)
+
+                        winston.debug('Sent [' + emails.length + '] emails.')
+                      })
+
+                      return c()
+                    })
+                    .catch(function (err) {
+                      winston.warn('[trudesk:events:sendSubscriberEmail] - ' + err)
+                      return c(err)
+                    })
+                })
+              }
+            )
+          }
+        ],
+        function () {
+          // Blank
+        }
+      )
+    })
+  })
+
   emitter.on('ticket:comment:added', function (ticket, comment, hostname) {
     // Goes to client
     io.sockets.emit(socketEvents.TICKETS_UPDATE, ticket)

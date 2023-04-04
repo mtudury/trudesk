@@ -809,7 +809,43 @@ apiTickets.update = function (req, res) {
           },
           function (cb) {
             if (!_.isUndefined(reqTicket.tags) && !_.isNull(reqTicket.tags)) {
-              ticket.tags = reqTicket.tags
+              if (!_.isUndefined(ticket.tags) && !_.isNull(ticket.tags)) {
+                if (!(reqTicket.tags.length == ticket.tags.length && !reqTicket.tags.some((v) => ticket.tags.map((t) => t._id.toString()).indexOf(v) < 0))) {
+
+                  ticket.tags = reqTicket.tags
+
+                  var tagSchema = require('../../../models/tag')
+                  tagSchema.getTags(function (err, alltags) {
+                    if (err) {
+                      winston.error("apiTickets.update => gettags :"+err)
+                      return cb();
+                    }
+
+                    let localtags = [];
+                    for (tagbdd of alltags) {
+                      for (tagreq of reqTicket.tags) {
+                        if (tagbdd._id.toString() == tagreq) {
+                          localtags.push(tagbdd.name)
+                        }
+                      }
+                    }
+
+                    var HistoryItem = {
+                      action: 'ticket:set:tags',
+                      description: 'tags: ' + localtags.join(', '),
+                      date: new Date(),
+                      owner: req.user._id
+                    }
+
+                    ticket.history.push(HistoryItem)
+
+                    emitter.emit('ticket:set:tags', ticket, req.headers.host)
+                    return cb()
+                  })
+                  return
+                }
+              }
+
             }
 
             return cb()
@@ -830,6 +866,7 @@ apiTickets.update = function (req, res) {
                 var HistoryItem = {
                   action: 'ticket:set:assignee',
                   description: t.assignee.fullname + ' was set as assignee',
+                  date: new Date(),
                   owner: req.user._id
                 }
 
