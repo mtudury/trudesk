@@ -145,17 +145,31 @@ apiTickets.get = function (req, res) {
   var status = req.query.status
   var user = req.user
   var tag = req.query.tag
+  var updated_start = req.query.updated_start
+  var updated_end = req.query.updated_end
 
   var object = {
     user: user,
     limit: limit,
     page: page,
     assignedSelf: assignedSelf,
-    status: status
+    status: status,
+    filter: {}
   }
 
   if (tag) {
-    object.filter = { tags: [tag] }
+    object.filter.tags = [tag]
+  }
+
+  if (updated_start) {
+    object.filter.updated = { start: new Date(Number(updated_start)) }
+  }
+  if (updated_end) {
+    if (object.filter.updated) {
+      object.filter.updated.end = new Date(Number(updated_end))
+    } else {
+      object.filter.updated = { end: new Date(Number(updated_end)) }
+    }
   }
 
   var ticketModel = require('../../../models/ticket')
@@ -228,7 +242,10 @@ apiTickets.get = function (req, res) {
       }
     ],
     function (err, results) {
-      if (err) return res.send('Error: ' + err.message)
+      if (err) {
+        winston.warn(err.toString())
+        return res.send('Error: ' + err.message)
+      }
 
       return res.json(results)
     }
@@ -458,6 +475,7 @@ apiTickets.create = function (req, res) {
         tIssue = sanitizeHtml(tIssue).trim()
         ticket.issue = xss(marked.parse(tIssue))
         ticket.history = [HistoryItem]
+        ticket.updated = Date.now()
         if (!_.isUndefined(postData.subscribers)) {
           ticket.subscribers = postData.subscribers
         } else {
@@ -767,6 +785,7 @@ apiTickets.update = function (req, res) {
           function (cb) {
             if (!_.isUndefined(reqTicket.status)) {
               ticket.status = reqTicket.status
+              ticket.updated = Date.now()
             }
 
             return cb()
@@ -774,6 +793,7 @@ apiTickets.update = function (req, res) {
           function (cb) {
             if (!_.isUndefined(reqTicket.subject)) {
               ticket.subject = sanitizeHtml(reqTicket.subject).trim()
+              ticket.updated = Date.now()
             }
 
             return cb()
@@ -803,6 +823,7 @@ apiTickets.update = function (req, res) {
           function (cb) {
             if (!_.isUndefined(reqTicket.closedDate)) {
               ticket.closedDate = reqTicket.closedDate
+              ticket.updated = Date.now()
             }
 
             return cb()
@@ -813,6 +834,7 @@ apiTickets.update = function (req, res) {
                 if (!(reqTicket.tags.length == ticket.tags.length && !reqTicket.tags.some((v) => ticket.tags.map((t) => t._id.toString()).indexOf(v) < 0))) {
 
                   ticket.tags = reqTicket.tags
+                  ticket.updated = Date.now()
 
                   var tagSchema = require('../../../models/tag')
                   tagSchema.getTags(function (err, alltags) {
@@ -853,6 +875,7 @@ apiTickets.update = function (req, res) {
           function (cb) {
             if (!_.isUndefined(reqTicket.issue) && !_.isNull(reqTicket.issue)) {
               ticket.issue = sanitizeHtml(reqTicket.issue).trim()
+              ticket.updated = Date.now()
             }
 
             return cb()
@@ -860,6 +883,7 @@ apiTickets.update = function (req, res) {
           function (cb) {
             if (!_.isUndefined(reqTicket.assignee) && !_.isNull(reqTicket.assignee)) {
               ticket.assignee = reqTicket.assignee
+              ticket.updated = Date.now()
               ticket.populate('assignee', function (err, t) {
                 if (err) return cb(err)
 

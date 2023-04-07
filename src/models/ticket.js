@@ -953,6 +953,16 @@ function buildQueryWithObject (SELF, grpId, object, count) {
 
       query.where({ date: { $gte: startDate, $lte: endDate } })
     }
+
+    // Date Updated Filter
+    if (object.filter.updated) {
+      let startDate = new Date(2000, 0, 1, 0, 0, 1)
+      let endDate = new Date()
+      if (object.filter.updated.start) startDate = new Date(object.filter.updated.start)
+      if (object.filter.updated.end) endDate = new Date(object.filter.updated.end)
+
+      query.where({ updated: { $gte: startDate, $lte: endDate } })
+    }
   }
 
   if (object.owner) query.where('owner', object.owner)
