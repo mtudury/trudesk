@@ -475,7 +475,6 @@ apiTickets.create = function (req, res) {
         tIssue = sanitizeHtml(tIssue).trim()
         ticket.issue = xss(marked.parse(tIssue))
         ticket.history = [HistoryItem]
-        ticket.updated = Date.now()
         if (!_.isUndefined(postData.subscribers)) {
           ticket.subscribers = postData.subscribers
         } else {
@@ -785,7 +784,6 @@ apiTickets.update = function (req, res) {
           function (cb) {
             if (!_.isUndefined(reqTicket.status)) {
               ticket.status = reqTicket.status
-              ticket.updated = Date.now()
             }
 
             return cb()
@@ -793,7 +791,6 @@ apiTickets.update = function (req, res) {
           function (cb) {
             if (!_.isUndefined(reqTicket.subject)) {
               ticket.subject = sanitizeHtml(reqTicket.subject).trim()
-              ticket.updated = Date.now()
             }
 
             return cb()
@@ -823,7 +820,6 @@ apiTickets.update = function (req, res) {
           function (cb) {
             if (!_.isUndefined(reqTicket.closedDate)) {
               ticket.closedDate = reqTicket.closedDate
-              ticket.updated = Date.now()
             }
 
             return cb()
@@ -834,7 +830,6 @@ apiTickets.update = function (req, res) {
                 if (!(reqTicket.tags.length == ticket.tags.length && !reqTicket.tags.some((v) => ticket.tags.map((t) => t._id.toString()).indexOf(v) < 0))) {
 
                   ticket.tags = reqTicket.tags
-                  ticket.updated = Date.now()
 
                   var tagSchema = require('../../../models/tag')
                   tagSchema.getTags(function (err, alltags) {
@@ -875,7 +870,6 @@ apiTickets.update = function (req, res) {
           function (cb) {
             if (!_.isUndefined(reqTicket.issue) && !_.isNull(reqTicket.issue)) {
               ticket.issue = sanitizeHtml(reqTicket.issue).trim()
-              ticket.updated = Date.now()
             }
 
             return cb()
@@ -883,7 +877,6 @@ apiTickets.update = function (req, res) {
           function (cb) {
             if (!_.isUndefined(reqTicket.assignee) && !_.isNull(reqTicket.assignee)) {
               ticket.assignee = reqTicket.assignee
-              ticket.updated = Date.now()
               ticket.populate('assignee', function (err, t) {
                 if (err) return cb(err)
 
@@ -1094,7 +1087,6 @@ apiTickets.postInternalNote = function (req, res) {
       note: xss(marked.parse(payload.note))
     }
 
-    ticket.updated = Date.now()
     ticket.notes.push(Note)
     var HistoryItem = {
       action: 'ticket:note:added',

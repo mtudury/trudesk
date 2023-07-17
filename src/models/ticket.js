@@ -123,6 +123,7 @@ ticketSchema.pre('findOne', autoPopulate).pre('find', autoPopulate)
 ticketSchema.pre('save', function (next) {
   this.subject = utils.sanitizeFieldPlainText(this.subject.trim())
   this.wasNew = this.isNew
+  this.updated = Date.now()
 
   if (!_.isUndefined(this.uid) || this.uid) {
     return next()
