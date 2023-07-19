@@ -135,8 +135,7 @@ const eventTicketCreated = require('./events/event_ticket_created')
   emitter.on('ticket:set:tags', function (ticket, hostname) {
     // Goes to client
     io.sockets.emit(socketEvents.TICKETS_UPDATE, ticket)
-
-    settingsSchema.getSettingsByName(['tps:enable', 'tps:username', 'tps:apikey', 'mailer:enable'], function (
+    settingsSchema.getSettingsByName(['tps:enable', 'tps:username', 'tps:apikey', 'mailer:enable', 'gen:siteurl'], function (
       err,
       tpsSettings
     ) {
@@ -146,6 +145,7 @@ const eventTicketCreated = require('./events/event_ticket_created')
       let tpsUsername = _.head(_.filter(tpsSettings, ['name', 'tps:username']))
       let tpsApiKey = _.head(_.filter(tpsSettings), ['name', 'tps:apikey'])
       let mailerEnabled = _.head(_.filter(tpsSettings), ['name', 'mailer:enable'])
+      let baseUrl = _.head(_.filter(tpsSettings), ['name', 'gen:siteurl'])
       mailerEnabled = !mailerEnabled ? false : mailerEnabled.value
 
       if (!tpsEnabled || !tpsUsername || !tpsApiKey) {
@@ -243,6 +243,7 @@ const eventTicketCreated = require('./events/event_ticket_created')
 
                   email
                     .render('ticket-tag-added', {
+                      base_url: baseUrl.value,
                       ticket: ticket
                     })
                     .then(function (html) {
@@ -281,7 +282,7 @@ const eventTicketCreated = require('./events/event_ticket_created')
     // Goes to client
     io.sockets.emit(socketEvents.TICKETS_UPDATE, ticket)
 
-    settingsSchema.getSettingsByName(['tps:enable', 'tps:username', 'tps:apikey', 'mailer:enable'], function (
+    settingsSchema.getSettingsByName(['tps:enable', 'tps:username', 'tps:apikey', 'mailer:enable', 'gen:siteurl'], function (
       err,
       tpsSettings
     ) {
@@ -291,6 +292,7 @@ const eventTicketCreated = require('./events/event_ticket_created')
       let tpsUsername = _.head(_.filter(tpsSettings, ['name', 'tps:username']))
       let tpsApiKey = _.head(_.filter(tpsSettings), ['name', 'tps:apikey'])
       let mailerEnabled = _.head(_.filter(tpsSettings), ['name', 'mailer:enable'])
+      let baseUrl = _.head(_.filter(tpsSettings), ['name', 'gen:siteurl'])
       mailerEnabled = !mailerEnabled ? false : mailerEnabled.value
 
       if (!tpsEnabled || !tpsUsername || !tpsApiKey) {
@@ -394,13 +396,14 @@ const eventTicketCreated = require('./events/event_ticket_created')
 
                   email
                     .render('ticket-comment-added', {
+                      base_url: baseUrl.value,
                       ticket: ticket,
                       comment: comment
                     })
                     .then(function (html) {
                       const mailOptions = {
                         to: emails.join(),
-                        subject: 'Updated: Ticket #' + ticket.uid + '-' + ticket.subject,
+                        subject: 'Ticket #' + ticket.uid + '-' + ticket.subject,
                         html: html,
                         generateTextFromHTML: true
                       }
