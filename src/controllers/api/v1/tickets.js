@@ -147,6 +147,7 @@ apiTickets.get = function (req, res) {
   var tag = req.query.tag
   var updated_start = req.query.updated_start
   var updated_end = req.query.updated_end
+  var gp = req.query.group
 
   var object = {
     user: user,
@@ -201,6 +202,17 @@ apiTickets.get = function (req, res) {
         } else {
           return callback(null, grps)
         }
+      },
+      function (grps, callback) {
+        if (gp) {
+          for (const itemgp of grps) {
+            if ((itemgp._id)&&(itemgp._id.toString() == gp)) {
+              return callback(null, [itemgp]);
+            }
+          }
+          return callback(null, []);
+        }
+        return callback(null, grps);
       },
       function (grps, callback) {
         ticketModel.getTicketsWithObject(grps, object, function (err, results) {
