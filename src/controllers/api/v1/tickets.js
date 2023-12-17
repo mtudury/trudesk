@@ -142,6 +142,7 @@ apiTickets.get = function (req, res) {
   var limit = parseInt(l)
   var page = parseInt(req.query.page)
   var assignedSelf = req.query.assignedself
+  var tt = req.query.tt;
   var status = req.query.status
   var user = req.user
   var tag = req.query.tag
@@ -156,6 +157,9 @@ apiTickets.get = function (req, res) {
     assignedSelf: assignedSelf,
     status: status,
     filter: {}
+  }
+  if (tt) {
+    object.filter.types = [tt];
   }
 
   if (tag) {
