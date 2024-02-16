@@ -496,6 +496,9 @@ apiTickets.create = function (req, res) {
         } else {
           ticket.subscribers = [user._id]
         }
+        if (!_.isUndefined(postData.note)) {
+          ticket.notes = [{ note: postData.note.replace(/(\r\n|\n\r|\r|\n)/g, '<br>'), date: new Date(), owner: user._id }]
+        }
 
         ticket.save(function (err, t) {
           if (err) return done({ status: 400, error: err })
@@ -856,8 +859,14 @@ apiTickets.update = function (req, res) {
 
                     let localtags = [];
                     for (tagbdd of alltags) {
-                      for (tagreq of reqTicket.tags) {
-                        if (tagbdd._id.toString() == tagreq) {
+                      if (Array.isArray(reqTicket.tags)) {
+                        for (tagreq of reqTicket.tags) {
+                          if (tagbdd._id.toString() == tagreq) {
+                            localtags.push(tagbdd.name)
+                          }
+                        }
+                      } else {
+                        if (tagbdd._id.toString() == reqTicket.tags) {
                           localtags.push(tagbdd.name)
                         }
                       }
@@ -1096,11 +1105,11 @@ apiTickets.postInternalNote = function (req, res) {
     if (_.isUndefined(payload.note)) return res.status(400).json({ success: false, error: 'Invalid Post Data' })
 
     var marked = require('marked')
-    // var note = payload.note.replace(/(\r\n|\n\r|\r|\n)/g, "<br>");
+    var localnote = payload.note.replace(/(\r\n|\n\r|\r|\n)/g, "<br>");
     var Note = {
       owner: payload.owner || req.user._id,
       date: new Date(),
-      note: xss(marked.parse(payload.note))
+      note: xss(marked.parse(localnote))
     }
 
     ticket.notes.push(Note)
