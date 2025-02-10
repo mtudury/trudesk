@@ -335,7 +335,7 @@ events.onCommentNoteSet = socket => {
     })
 
     text = sanitizeHtml(text).trim()
-    const markedText = xss(marked.parse(text))
+    const markedText = text
 
     try {
       let ticket = await ticketSchema.getTicketById(ticketId)
