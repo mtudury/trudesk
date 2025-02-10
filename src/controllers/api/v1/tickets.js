@@ -1109,7 +1109,7 @@ apiTickets.postInternalNote = function (req, res) {
     var Note = {
       owner: payload.owner || req.user._id,
       date: new Date(),
-      note: xss(marked.parse(localnote))
+      note: localnote
     }
 
     ticket.notes.push(Note)
