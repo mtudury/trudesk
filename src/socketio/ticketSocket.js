@@ -335,7 +335,7 @@ events.onCommentNoteSet = socket => {
     })
 
     text = sanitizeHtml(text).trim()
-    const markedText = text
+    const markedText = text.replace(/(\r\n|\n\r|\r|\n)/g, "<br>");
 
     try {
       let ticket = await ticketSchema.getTicketById(ticketId)
